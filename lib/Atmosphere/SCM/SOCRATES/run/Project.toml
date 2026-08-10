@@ -1,5 +1,3 @@
 [deps]
 ClimaAtmos = "b2c96348-7fb7-4fe0-8da9-78d88439e717"
-ClimaCalibrate = "4347a170-ebd6-470c-89d3-5c705c0cacc2"
-EnsembleKalmanProcesses = "aa8a2aa5-91d8-4396-bcef-d4f2ec43552d"
 SOCRATESSingleColumnForcings = "efca6b66-9b98-11ed-1a32-7b7cdccd517a"
