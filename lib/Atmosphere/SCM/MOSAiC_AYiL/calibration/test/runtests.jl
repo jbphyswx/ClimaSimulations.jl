@@ -21,7 +21,7 @@ Test.@testset "calibrated days" begin
 end
 
 Test.@testset "observation shape" begin
-    grid = MC.default_mosaic_ayil_grid(; dz_min = 400)
+    grid = MC.default_MOSAiC_AYiL_grid(; dz_min = 400)
     interface = MC.MOSAiCInterface(;
         output_dir = mktempdir(), cases = CASES,
         vars = ["ql_all", "qi_all", "lwp", "iwp"], grid,
@@ -45,7 +45,7 @@ Test.@testset "observation shape" begin
 end
 
 Test.@testset "the EKP object and the minibatch round trip" begin
-    grid = MC.default_mosaic_ayil_grid(; dz_min = 400)
+    grid = MC.default_MOSAiC_AYiL_grid(; dz_min = 400)
     interface = MC.MOSAiCInterface(;
         output_dir = mktempdir(), cases = CASES,
         vars = ["ql_all", "qi_all", "lwp", "iwp"], grid,

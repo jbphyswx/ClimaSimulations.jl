@@ -54,7 +54,7 @@ function calibrate(;
     iterations = 10, 
     T_stops = [1., 10., 100., 1000.],
     minibatch_size = length(cases), 
-    grid = MC.default_mosaic_ayil_grid(; dz_min = 100),
+    grid = MC.default_MOSAiC_AYiL_grid(; dz_min = 100),
     dates = MC.default_calibration_dates(),
     prior = default_ayil_prior(),
     seed = 1234,

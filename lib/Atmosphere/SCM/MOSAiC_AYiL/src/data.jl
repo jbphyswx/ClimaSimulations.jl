@@ -300,13 +300,13 @@ const LES_FACES = Float32[
 const LES_TOP_FACE = last(LES_FACES)
 
 """
-    mosaic_ayil_face_above_center(z)
+    MOSAiC_AYiL_face_above_center(z)
 
 The [`LES_FACES`](@ref) face at or above `z` [m].
 
     The first face above a center in a grid, defaulting tothe default MOSAiC AYiL grid
 """
-function mosaic_ayil_face_above_center(z, faces::AbstractVector = LES_FACES)
+function MOSAiC_AYiL_face_above_center(z, faces::AbstractVector = LES_FACES)
     k = findfirst(>=(z), faces)
     isnothing(k) &&
         error("$z m is above the faces top face $(last(faces)) m.")

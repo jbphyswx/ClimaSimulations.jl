@@ -140,14 +140,14 @@ Test.@testset "a centre becomes the face above it" begin
     faces = MA.LES_FACES
     # idempotent on a face, and never moves a value down
     for f in faces
-        Test.@test MA.mosaic_ayil_face_above_center(f) == f
+        Test.@test MA.MOSAiC_AYiL_face_above_center(f) == f
     end
     Test.@test all(
-        MA.mosaic_ayil_face_above_center(z) >= z for z in MA.LES_FACES[1:(end - 1)] .+ 1
+        MA.MOSAiC_AYiL_face_above_center(z) >= z for z in MA.LES_FACES[1:(end - 1)] .+ 1
     )
     # the filter's "nothing flagged" value is the topmost centre, and has to become
     # the top face or a full-column run loses its top cell
-    Test.@test MA.mosaic_ayil_face_above_center(11857.2) == MA.LES_TOP_FACE
+    Test.@test MA.MOSAiC_AYiL_face_above_center(11857.2) == MA.LES_TOP_FACE
     Test.@test !any(==(11857.2), values(MA.BEST_SIMULATION_TOP_F))
     Test.@test MA.best_simulation_top(MA.case("20200503")) == MA.LES_TOP_FACE
     # so truncating at it reproduces the reference column exactly
@@ -156,5 +156,5 @@ Test.@testset "a centre becomes the face above it" begin
         MA.native_faces(c), MA.best_simulation_top(c),
     ) == MA.native_faces(c)
     # above the column is an error, not a silent clamp
-    Test.@test_throws ErrorException MA.mosaic_ayil_face_above_center(20000.0)
+    Test.@test_throws ErrorException MA.MOSAiC_AYiL_face_above_center(20000.0)
 end

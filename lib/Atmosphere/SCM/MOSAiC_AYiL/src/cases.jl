@@ -168,7 +168,7 @@ The DALES cell faces [m] of a case — the model's default vertical grid.
 native_faces(c::MOSAiCAYiLCase; root = data_root()) = les_faces(c.date; root)
 
 """Domain top [m]: the top face of the DALES grid."""
-z_max_default(c::MOSAiCAYiLCase; root = data_root()) = last(native_faces(c; root))
+z_max(c::MOSAiCAYiLCase; root = data_root()) = last(native_faces(c; root))
 
 """
     truncate_faces_to_top(faces, z_top)

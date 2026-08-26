@@ -329,7 +329,7 @@ const RAW_BEST_SIMULATION_TOP_C = Dict{String, Float64}(
 );
 
 const RAW_BEST_SIMULATION_TOP_F  = Dict{String, Float64}(
-  k => mosaic_ayil_face_above_center(v) for (k,v) in RAW_BEST_SIMULATION_TOP_C)
+  k => MOSAiC_AYiL_face_above_center(v) for (k,v) in RAW_BEST_SIMULATION_TOP_C)
 
 const BEST_SIMULATION_TOP_F = Dict(date => RAW_BEST_SIMULATION_TOP_F[date] for date in keys(RAW_BEST_SIMULATION_TOP_F))
 

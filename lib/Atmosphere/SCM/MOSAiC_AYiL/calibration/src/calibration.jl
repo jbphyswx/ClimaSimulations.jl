@@ -22,7 +22,7 @@ default_calibration_cases(; kwargs...) =
     [MOSAiC_AYiL.case(d) for d in default_calibration_dates(; kwargs...)]
 
 """
-    default_mosaic_ayil_grid(FT; dz_min, top)
+    default_MOSAiC_AYiL_grid(FT; dz_min, top)
 
 One vertical grid for every day: the reference's own faces coarsened to `dz_min`.
 
@@ -32,7 +32,7 @@ still bounds what is *compared* — [`z_bounds`](@ref) — so nothing above it e
 misfit; `top` shortens the domain itself, which only makes sense for a set of days
 that share one.
 """
-default_mosaic_ayil_grid(
+default_MOSAiC_AYiL_grid(
     ::Type{FT} = Float64;
     dz_min = 100,
     top = MOSAiC_AYiL.LES_TOP_FACE,

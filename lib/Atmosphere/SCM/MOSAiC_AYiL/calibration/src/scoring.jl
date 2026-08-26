@@ -386,7 +386,7 @@ function calibrated_values(
         # every path
         faces = MOSAiC_AYiL.truncate_faces_to_top(
             MOSAiC_AYiL.native_faces(c),
-            MOSAiC_AYiL.mosaic_ayil_face_above_center(last(levels)),
+            MOSAiC_AYiL.MOSAiC_AYiL_face_above_center(last(levels)),
         )
         path_faces = _faces_for(levels, faces)
         ρ = let f = fetch("rhoa")
