@@ -1,0 +1,10 @@
+[deps]
+EnsembleKalmanProcesses = "aa8a2aa5-91d8-4396-bcef-d4f2ec43552d"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+SOCRATES = "a37e3bb6-c736-4927-99dc-192931448b43"
+SOCRATESCalibration = "b71f5ce8-89fa-48b5-b778-959c2770be12"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+SOCRATES = {path = "../.."}
+SOCRATESCalibration = {path = ".."}

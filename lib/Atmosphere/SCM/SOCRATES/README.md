@@ -1,76 +1,79 @@
-# SOCRATES Single-Column Model (SCM) & Calibration Suite
+# SOCRATES
 
-This package provides a standalone, production-ready implementation of the Southern Ocean Clouds, Radiation, Aerosol Transport Experimental Study (**SOCRATES**) Single-Column Model (SCM) simulation, Atlas Large Eddy Simulation (LES) profile scoring, and Ensemble Kalman Inversion (EKI) calibration suite within `ClimaSimulations.jl`.
+Single-column simulations of the SOCRATES field campaign, set up to reproduce the
+large-eddy simulations of [Atlas et al. (2020)](https://doi.org/10.1029/2020MS002205),
+and to calibrate microphysics against them.
 
----
+Eleven cases: research flights 1, 9, 10, 11, 12 and 13, each forced either from
+the observed soundings (`Obs`, a 12 h run) or from ERA5 (`ERA5`, 14 h). Flight 11
+has no `Obs` artifact. Forcing and reference data come from
+[SOCRATESSingleColumnForcings.jl](https://github.com/jbphyswx/SOCRATESSingleColumnForcings.jl)
+as lazily-downloaded artifacts.
 
-## Architecture
+## Running a case
 
-The codebase is organized into two strictly decoupled layers:
-
-### Layer 1: Core Forward Model & LES Scoring (`src/`)
-- **Independent Package (`SOCRATES.jl`)**: Contains all forward simulation logic, in-memory SSCF forcing, diagnostic registration, grid management, and Atlas LES profile scoring.
-- **Zero Calibration Dependencies**: Does not import `ClimaCalibrate`, `EnsembleKalmanProcesses`, or `JLD2`.
-
-Key files:
-- [`src/cases.jl`](src/cases.jl): `SocratesCase` registry, 11 flight configurations (5 Obs, 6 ERA5), vertical grids, parameter merging.
-- [`src/model.jl`](src/model.jl): In-memory `ColumnMemoryTimeVaryingInput`, `ScaledTerminalVelocity`, `socrates_simulation`, and execution runners (`run_case`, `run_cases`).
-- [`src/scoring.jl`](src/scoring.jl): Atlas LES reference loading, `ScoreTransform`, vertical domain bounding, and normalized profile scoring (`compare_to_les`).
-
-### Layer 2: Outer Calibration Layer (`calibration/`)
-- **Decoupled Package (`SOCRATESCalibration.jl`)**: Implements `ClimaCalibrate.AbstractModelInterface`, SVD+diagonal noise covariance construction, `GEnsembleBuilder` observation maps, and EKI driver loops with staged `T_stops`.
-
-Key files:
-- [`calibration/src/calibration.jl`](calibration/src/calibration.jl): `SocratesInterface`, observation mapping, priors, and flat-parallel `calibrate` driver.
-
----
-
-## Quickstart
-
-### 1. Forward Simulation & LES Scoring (Layer 1)
+Nothing has to be generated or configured first.
 
 ```julia
 using SOCRATES: SOCRATES
 
-# Select case (e.g. Flight 09 with observational forcing)
 case = SOCRATES.case("RF09_Obs")
+dir = SOCRATES.run_case(case; output_dir = "output/RF09_Obs")
 
-# Run forward SCM simulation
-output_dir = SOCRATES.run_case(case; FT = Float64, output_dir = "output/RF09_Obs")
-
-# Compare against Atlas LES reference
-comparison = SOCRATES.compare_to_les(case, output_dir)
-SOCRATES.print_comparison(comparison)
+SOCRATES.print_comparison(SOCRATES.compare_to_les(case, dir))
 ```
 
-### 2. EKI Parameter Calibration (Layer 2)
+`run_case` builds the case on its own Atlas vertical grid and runs it for the
+Atlas run length. `SOCRATES.all_cases()` lists all eleven.
+
+## What the case is
+
+  - **Grid**: the Atlas LES levels for the flight — 320 levels to 6.1 km for
+    flight 9, 320 to 4.8 km for 1, 10 and 11, 192 to 2.9 km for 12 and 13.
+  - **Forcing**: horizontal advection of temperature and total water, relaxation
+    of temperature, total water and horizontal wind toward the case profiles, and
+    large-scale subsidence. SSCF carries no vertical eddy tendency; vertical
+    transport comes from subsidence acting on the model's own profiles.
+  - **Surface**: Monin-Obukhov fluxes over the prescribed sea surface temperature.
+  - **Radiation**: interactive RRTMGP at a zenith angle held fixed at the case
+    reference time, following Atlas et al. (2020) section 4.2.
+  - **Physics**: prognostic EDMFX with one updraft, non-equilibrium 1-moment
+    microphysics with a quadrature cloud.
+
+## Layout
+
+| path | holds |
+|---|---|
+| `src/casedata.jl` | readers for `cases/` and `configs/` |
+| `src/cases.jl` | the case type, its grid, its parameter set |
+| `src/forcing.jl` | `SOCRATESForcing` and its cache and tendency |
+| `src/model.jl` | scaled sedimentation, prescribed surface temperature and insolation, the initial condition, and the simulation |
+| `src/scoring.jl` | Atlas LES reference, scored region, normalized misfit |
+| `cases/socrates.toml` | per-case data, each value with its source |
+| `configs/socrates.toml` | ClimaParams overrides |
+| `calibration/` | the EKI layer, a separate package |
+
+Case values and model components are all keyword arguments. `socrates_model` and
+`socrates_simulation` forward `kwargs...` to `AtmosModel` and `AtmosSimulation`,
+so any field of either can be replaced without editing this package:
 
 ```julia
-using ClimaCalibrate: ClimaCalibrate
-using Distributed: Distributed
-using SOCRATES: SOCRATES
-using SOCRATESCalibration: SOCRATESCalibration
-
-# Select cases for joint calibration
-cases = [SOCRATES.case("RF09_Obs"), SOCRATES.case("RF10_Obs")]
-
-# Build interface, prior, and EKP
-interface = SOCRATESCalibration.SocratesInterface(; cases, output_dir = "output/calibration_run")
-prior = SOCRATESCalibration.default_prior()
-ekp = SOCRATESCalibration.build_ekp(interface, prior; ensemble_size = 4)
-
-# Run calibration
-backend = ClimaCalibrate.WorkerBackend(Distributed.default_worker_pool())
-SOCRATESCalibration.calibrate(backend, ekp, interface; prior, n_iterations = 5)
+SOCRATES.run_case(
+    case;
+    output_dir = "output/coarse",
+    grid = SOCRATES.socrates_grid(Float64, case; dz_min = 100.0),
+    t_end = 3600,
+    model_kwargs = (; cloud_model = SOCRATES.CA.GridScaleCloud()),
+)
 ```
 
----
-
-## Running Tests
-
-Run the unit test suite:
+## Tests
 
 ```julia
 using Pkg
 Pkg.test("SOCRATES")
 ```
+
+The suite covers the case registry, the grids, the parameter composition, the
+forcing on every case, the Atlas reference, and a short simulation that has to
+reach its end time.
