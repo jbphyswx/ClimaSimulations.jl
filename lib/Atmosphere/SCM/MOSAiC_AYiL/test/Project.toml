@@ -1,0 +1,12 @@
+[deps]
+ClimaAtmos = "b2c96348-7fb7-4fe0-8da9-78d88439e717"
+ClimaComms = "3a4d1b5c-c61d-41fd-a00a-5873ba7a1b0d"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+MOSAiC_AYiL = "99b42949-9d25-46dd-a09d-3f6a84126053"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+
+
+[sources]
+MOSAiC_AYiL = {path = ".."}

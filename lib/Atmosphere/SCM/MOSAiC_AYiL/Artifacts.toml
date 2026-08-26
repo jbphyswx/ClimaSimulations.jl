@@ -1,0 +1,7 @@
+[ayil_config_input_results]
+git-tree-sha1 = "2a17c5cd9f30dc0e65354a1cf5a07d0c2da7e42b"
+lazy = true
+
+    [[ayil_config_input_results.download]]
+    sha256 = "a15ac7ab0f7f1ccdb1d51d1359af4a96398a4d3d9e3eeb598c267cf9333663a0"
+    url = "https://zenodo.org/api/records/10491362/files/ayil_config_input_results.zip/content"
