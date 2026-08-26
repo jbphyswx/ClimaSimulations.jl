@@ -37,7 +37,7 @@ the lowest within the last one. Iterations with no `G_ensemble` are skipped and 
 ignored.
 """
 function best_members(
-    interface::SocratesInterface;
+    interface::SOCRATESInterface;
     last_iteration::Integer = ClimaCalibrate.last_completed_iteration(
         interface.output_dir,
     ),
@@ -74,7 +74,7 @@ Uses the member's own `parameters.toml` and the grid the calibration used, so th
 the calibration ran.
 """
 function rerun_member(
-    interface::SocratesInterface,
+    interface::SOCRATESInterface,
     iteration::Integer,
     member::Integer;
     output_dir::AbstractString,
@@ -112,7 +112,7 @@ Rerun the best and best-final members with full diagnostics, returning a `Dict` 
 can always index either.
 """
 function postprocess_best_members(
-    interface::SocratesInterface;
+    interface::SOCRATESInterface;
     output_dir::AbstractString = joinpath(interface.output_dir, "postprocess"),
     last_iteration::Integer = ClimaCalibrate.last_completed_iteration(
         interface.output_dir,
@@ -148,8 +148,8 @@ such whatever `location` selects.
 """
 function case_budget_terms(
     dir::AbstractString,
-    case::SOCRATES.SocratesCase;
-    window = SOCRATES.score_window(case),
+    case::SOCRATES.SOCRATESCase;
+    window = score_window(case),
     location::AbstractString = "mp1m",
     period::AbstractString = "10m",
 )
@@ -165,11 +165,11 @@ function case_budget_terms(
     z = Float64[]
     for (name, key) in wanted
         var = try
-            only(values(SOCRATES.run_outputvars(dir, (name,); period)))
+            only(values(run_outputvars(dir, (name,); period)))
         catch
             continue
         end
-        averaged = SOCRATES.windowed_time_mean(var, window)
+        averaged = windowed_time_mean(var, window)
         terms[key] = collect(Float64, vec(averaged.data))
         isempty(z) &&
             (z = collect(Float64, var.dims[ClimaAnalysis.altitude_name(var)]))

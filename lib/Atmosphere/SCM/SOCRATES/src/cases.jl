@@ -7,12 +7,12 @@ The SOCRATES case type, its vertical grid, and its parameter set.
 # --- Case ------------------------------------------------------------------- #
 
 """
-    SocratesCase(flight_number, forcing_type)
+    SOCRATESCase(flight_number, forcing_type)
 
 One Atlas LES case: SOCRATES research flight `flight_number` forced by
 `forcing_type` (`SSCF.ObsForcing()` or `SSCF.ERA5Forcing()`).
 """
-struct SocratesCase{F <: SSCF.AbstractForcingType}
+struct SOCRATESCase{F <: SSCF.AbstractForcingType}
     flight_number::Int
     forcing_type::F
 end
@@ -25,7 +25,7 @@ forcing_type(sym::Symbol) =
     error("Unknown SOCRATES forcing type `:$sym`; expected `:Obs` or `:ERA5`")
 
 """Short forcing label, `:Obs` or `:ERA5`."""
-forcing_label(c::SocratesCase) = SSCF.symbol(c.forcing_type)
+forcing_label(c::SOCRATESCase) = SSCF.symbol(c.forcing_type)
 
 """
     case_name(case)
@@ -33,27 +33,27 @@ forcing_label(c::SocratesCase) = SSCF.symbol(c.forcing_type)
 The canonical case name, e.g. `"RF09_Obs"`, used for output subdirectories and
 observation identifiers.
 """
-case_name(c::SocratesCase) =
+case_name(c::SOCRATESCase) =
     string("RF", lpad(c.flight_number, 2, '0'), "_", forcing_label(c))
 
-Base.show(io::IO, c::SocratesCase) = print(io, "SocratesCase(", case_name(c), ")")
+Base.show(io::IO, c::SOCRATESCase) = print(io, "SOCRATESCase(", case_name(c), ")")
 
 """
     case(name)
 
-Parse a case name such as `"RF09_Obs"` into a [`SocratesCase`](@ref).
+Parse a case name such as `"RF09_Obs"` into a [`SOCRATESCase`](@ref).
 """
 function case(name::AbstractString)
     m = match(r"^RF(\d{1,2})_(Obs|ERA5)$", name)
     isnothing(m) && error(
         "Cannot parse SOCRATES case name `$name`; expected e.g. \"RF09_Obs\".",
     )
-    return validate(SocratesCase(parse(Int, m[1]), forcing_type(Symbol(m[2]))))
+    return validate(SOCRATESCase(parse(Int, m[1]), forcing_type(Symbol(m[2]))))
 end
 
-case(c::SocratesCase) = c
+case(c::SOCRATESCase) = c
 case(flight_number::Integer, ft) =
-    validate(SocratesCase(Int(flight_number), forcing_type(ft)))
+    validate(SOCRATESCase(Int(flight_number), forcing_type(ft)))
 
 """
     all_cases()
@@ -62,7 +62,7 @@ Every valid (flight, forcing) Atlas LES case. Flight 11 has no Obs artifact, so
 it appears only under ERA5.
 """
 all_cases() = [
-    SocratesCase(flight, ft) for ft in SSCF.forcing_types,
+    SOCRATESCase(flight, ft) for ft in SSCF.forcing_types,
     flight in SSCF.flight_numbers if SSCF.is_valid_flight_number(ft, flight)
 ]
 
@@ -71,7 +71,7 @@ all_cases() = [
 
 Error unless SSCF has an Atlas artifact for this (flight, forcing) pair.
 """
-function validate(c::SocratesCase)
+function validate(c::SOCRATESCase)
     SSCF.is_valid_flight_number(c.forcing_type, c.flight_number) || error(
         "No SOCRATES $(forcing_label(c)) artifact for flight $(c.flight_number) \
          (case $(case_name(c))).",
@@ -82,72 +82,25 @@ end
 # --- Clocks ----------------------------------------------------------------- #
 
 """Simulation end time [s], matching the Atlas LES run length."""
-t_end(c::SocratesCase) = run_duration(forcing_label(c))
+t_end(c::SOCRATESCase) = run_duration(forcing_label(c))
 
 """The wall-clock start of the Atlas LES run, 12 h before the case reference time."""
-les_start_datetime(c::SocratesCase) =
+les_start_datetime(c::SOCRATESCase) =
     SSCF.get_socrates_initial_time(c.flight_number)
 
 """Prescribed cloud droplet number concentration [m^-3] for this case's flight."""
-n_ccn(c::SocratesCase) = droplet_number(c.flight_number)
-
-"""
-    score_window(case)
-
-The `(t_start, t_end)` window [s] over which model and reference are time-averaged.
-"""
-score_window(c::SocratesCase) = check_score_window(
-    c,
-    c.forcing_type isa SSCF.ObsForcing ? obs_score_window() :
-    era5_score_window(c.flight_number),
-)
-
-function check_score_window(c::SocratesCase, window)
-    t0, t1 = window
-    duration = t_end(c)
-    (0 <= t0 < t1 <= duration) || error(
-        "Scoring window ($t0, $t1) s for $(case_name(c)) is not within the run \
-         [0, $duration] s.",
-    )
-    return (Float64(t0), Float64(t1))
-end
-
-"""
-    era5_score_window(flight_number)
-
-`(t_start, t_end)` [s] for an ERA5 case, from the Atlas Table 2 metadata in
-`SOCRATES_summary.nc`.
-"""
-function era5_score_window(flight_number::Integer)
-    path = SSCF.atlas_socrates_summary_file(Int(flight_number))
-    isfile(path) || error("Atlas SOCRATES summary file not found: $path")
-    return NC.NCDataset(path, "r") do ds
-        flights = vec(Array(ds["flight_number"]))
-        i = findfirst(==(flight_number), flights)
-        isnothing(i) && error(
-            "Flight $flight_number not present in $path (has $(collect(flights))).",
-        )
-        bnds = ds["time_bnds"]
-        size(bnds) == (2, length(flights)) || error(
-            "$path `time_bnds` has size $(size(bnds)); expected \
-             (2, $(length(flights))).",
-        )
-        reference = ds["reference_time"][i]
-        offsets = (Float64(Dates.value(Dates.Second(b - reference))) for b in bnds[:, i])
-        Tuple(o + 12 * 3600.0 for o in offsets)
-    end
-end
+n_ccn(c::SOCRATESCase) = droplet_number(c.flight_number)
 
 # --- Vertical grid ---------------------------------------------------------- #
 
 """The Atlas LES level centres [m] for `case`."""
-native_z(c::SocratesCase) = collect(Float64, SSCF.default_new_z(c.flight_number))
+native_z(c::SOCRATESCase) = collect(Float64, SSCF.default_new_z(c.flight_number))
 
 """The Atlas LES cell faces [m] for `case` — the model's default vertical grid."""
-native_faces(c::SocratesCase) = faces_from_centers(native_z(c))
+native_faces(c::SOCRATESCase) = faces_from_centers(native_z(c))
 
 """Domain top [m] for `case`: the top face of the LES grid."""
-z_max_default(c::SocratesCase) = last(native_faces(c))
+z_max(c::SOCRATESCase) = last(native_faces(c))
 
 """
     faces_from_centers(centers; surface = 0.0)
@@ -203,7 +156,7 @@ The column grid for `case`, built from explicit cell faces.
 """
 function socrates_grid(
     ::Type{FT},
-    c::SocratesCase;
+    c::SOCRATESCase;
     faces::AbstractVector = native_faces(c),
     dz_min = nothing,
     context = ClimaComms.context(),
@@ -228,7 +181,7 @@ function socrates_z(grid)
     return vec(Array(parent(CC.Fields.coordinate_field(center_space).z)))
 end
 
-socrates_z(::Type{FT}, c::SocratesCase; kwargs...) where {FT <: AbstractFloat} =
+socrates_z(::Type{FT}, c::SOCRATESCase; kwargs...) where {FT <: AbstractFloat} =
     socrates_z(socrates_grid(FT, c; kwargs...))
 
 # --- Parameters ------------------------------------------------------------- #
@@ -261,7 +214,7 @@ override any value of either layer beneath it.
 """
 function socrates_toml_dict(
     ::Type{FT},
-    c::SocratesCase;
+    c::SOCRATESCase;
     params = nothing,
 ) where {FT <: AbstractFloat}
     sources = ParamSource[
@@ -282,7 +235,7 @@ end
 """`ClimaAtmosParameters` for `case`."""
 socrates_params(
     ::Type{FT},
-    c::SocratesCase;
+    c::SOCRATESCase;
     params = nothing,
     microphysics_model = CA.NonEquilibriumMicrophysics1M(),
 ) where {FT <: AbstractFloat} =

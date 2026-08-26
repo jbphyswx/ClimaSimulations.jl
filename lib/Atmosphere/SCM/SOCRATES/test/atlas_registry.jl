@@ -40,21 +40,6 @@ Test.@testset "a spec that disagrees with the file is refused" begin
     )
 end
 
-Test.@testset "the two vocabularies cannot drift apart" begin
-    diags = CA.Diagnostics.ALL_DIAGNOSTICS
-    for (name, pair) in SOCRATES.MODEL_TO_ATLAS
-        Test.@test haskey(SPECS, pair.atlas)
-        Test.@test SPECS[pair.atlas].units == pair.atlas_units
-        Test.@test haskey(diags, name)
-        Test.@test diags[name].units == pair.model_units
-    end
-    for name in SOCRATES.SCORED_VARS
-        Test.@test haskey(SOCRATES.MODEL_TO_ATLAS, name)
-    end
-    # the one pairing whose two vocabularies differ numerically rather than in spelling
-    Test.@test SOCRATES.MODEL_TO_ATLAS["cl"].to_model(0.25) == 25
-end
-
 Test.@testset "the sedimentation identity holds through the conversions" begin
     # Q*SED = -(1/rho) d(Q*SDFLX/L)/dz is a relation between two independently written
     # archive variables, so it tests this package's flux-divergence operator, its unit

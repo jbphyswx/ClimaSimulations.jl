@@ -412,7 +412,7 @@ a nonzero start would silently offset the forcing from the state.
 """
 function socrates_simulation(
     ::Type{FT},
-    c::SocratesCase;
+    c::SOCRATESCase;
     output_dir::AbstractString,
     params = nothing,
     grid = socrates_grid(FT, c),
@@ -479,7 +479,7 @@ Build and solve one SOCRATES case, returning the directory its diagnostics were
 written to.
 """
 function run_case(
-    c::SocratesCase;
+    c::SOCRATESCase;
     FT::Type{<:AbstractFloat} = Float64,
     output_dir::AbstractString,
     kwargs...,
@@ -500,7 +500,7 @@ Run each case into its own subdirectory of `output_dir`. A case that fails stops
 the sweep.
 """
 run_cases(
-    cases::AbstractVector{<:SocratesCase};
+    cases::AbstractVector{<:SOCRATESCase};
     FT::Type{<:AbstractFloat} = Float64,
     output_dir::AbstractString,
     kwargs...,

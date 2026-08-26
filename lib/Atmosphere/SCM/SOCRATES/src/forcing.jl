@@ -30,7 +30,7 @@ Large-scale forcing for one SOCRATES case: horizontal advection of temperature
 and total water, relaxation of temperature, total water and horizontal wind
 toward the case profiles, and large-scale subsidence.
 
-`source` is either a [`SocratesCase`](@ref), sampled from SSCF, or the path of a
+`source` is either a [`SOCRATESCase`](@ref), sampled from SSCF, or the path of a
 file written by [`write_forcing_file`](@ref) holding those same profiles. All
 grid-dependent work happens once in `ClimaAtmos.external_forcing_cache`.
 
@@ -44,13 +44,13 @@ thing being modelled — unconstrained.
   - `scalar_nudge_timescale`: Relaxation timescale of `T` and `q_tot` [s].
   - `wind_nudge_timescale`: Relaxation timescale of `u` and `v` [s].
 """
-struct SOCRATESForcing{FT, S <: Union{SocratesCase, AbstractString}}
+struct SOCRATESForcing{FT, S <: Union{SOCRATESCase, AbstractString}}
     source::S
     inv_τ_scalar::FT
     inv_τ_wind::FT
 end
 
-_validated_source(c::SocratesCase) = validate(c)
+_validated_source(c::SOCRATESCase) = validate(c)
 function _validated_source(path::AbstractString)
     isfile(path) || error("SOCRATES forcing file not found: $path")
     return path
@@ -87,7 +87,7 @@ _t_seconds(t::CA.ClimaUtilities.TimeManager.ITime) = Float64(float(t))
 `(; interpolants, surface)` for `source` on levels `z`: a per-level vector of time
 interpolants for each of [`SSCF_FORCING_VARS`](@ref), and the surface series.
 """
-function sample_forcing(c::SocratesCase, z::AbstractVector, thermo)
+function sample_forcing(c::SOCRATESCase, z::AbstractVector, thermo)
     interpolants = SSCF.get_column_forcing(
         c.flight_number,
         c.forcing_type,

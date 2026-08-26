@@ -59,7 +59,7 @@ les_rate_variables() =
 `(; z, time, data)` of every Atlas variable [`LES_RATE_SOURCES`](@ref) names, as
 specific-content tendencies [kg kg^-1 s^-1] with `time` in elapsed seconds.
 """
-les_rate_profiles(c::SocratesCase; params) =
+les_rate_profiles(c::SOCRATESCase; params) =
     read_atlas(c, les_rate_variables(); params)
 
 """
@@ -69,17 +69,12 @@ Atlas rates for `case` [kg kg^-1 s^-1], averaged over `window` and resampled ont
 keyed by the model rate name.
 """
 function case_les_rates(
-    c::SocratesCase,
+    c::SOCRATESCase,
     z::AbstractVector;
     params,
-    window = score_window(c),
 )
     raw = les_rate_profiles(c; params)
-    keep = findall(t -> first(window) <= t <= last(window), raw.time)
-    isempty(keep) && error(
-        "No LES times inside $(window) s for $(case_name(c)); the record spans \
-         $(extrema(raw.time)) s.",
-    )
+
     FT = eltype(raw.z)
     # linear in height with flat ends: the Atlas grid is finer than any model grid here
     onto(profile) = map(z) do zi
@@ -95,7 +90,7 @@ function case_les_rates(
         total = zeros(FT, length(raw.z))
         for (name, sign) in terms
             a = raw.data[name]
-            total .+= sign .* [FT(nanmean(view(a, k, keep))) for k in axes(a, 1)]
+            total .+= sign .* [FT(nanmean(view(a, k, Colon()))) for k in axes(a, 1)]
         end
         rates[rate] = collect(FT, onto(total))
     end

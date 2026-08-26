@@ -7,11 +7,6 @@ units = "s"
 Obs = 43200.0
 ERA5 = 50400.0
 
-[score_window]
-source = "Atlas et al. 2020: the last two hours of an Obs run. ERA5 windows are read per case from `time_bnds` in the Atlas `SOCRATES_summary.nc` artifact rather than duplicated here."
-units = "s"
-Obs = [36000.0, 43200.0]
-
 [nudging]
 source = "Atlas et al. 2020, section 4.2"
 units = "s"
@@ -27,10 +22,6 @@ z0 = 1.0e-4
 [droplet_number]
 source = "the cloud droplet number prescribed by the Atlas LES for each flight"
 units = "m^-3"
-
-[scored_z_top]
-source = "the LES cloud top over the scoring window, plus 1 km, rounded up to 500 m and capped at the domain top. Flights 1 and 12 Obs are set below that (3000 rather than 3500, 2000 rather than 2500) and are kept as the established scored region for this suite."
-units = "m"
 
 [[flight]]
 number = 1
@@ -55,58 +46,3 @@ droplet_number = 2.1e8
 [[flight]]
 number = 13
 droplet_number = 1.8e8
-
-[[case]]
-flight = 1
-forcing = "Obs"
-scored_z_top = 3000.0
-
-[[case]]
-flight = 9
-forcing = "Obs"
-scored_z_top = 4000.0
-
-[[case]]
-flight = 10
-forcing = "Obs"
-scored_z_top = 3500.0
-
-[[case]]
-flight = 12
-forcing = "Obs"
-scored_z_top = 2000.0
-
-[[case]]
-flight = 13
-forcing = "Obs"
-scored_z_top = 2000.0
-
-[[case]]
-flight = 1
-forcing = "ERA5"
-scored_z_top = 3000.0
-
-[[case]]
-flight = 9
-forcing = "ERA5"
-scored_z_top = 4500.0
-
-[[case]]
-flight = 10
-forcing = "ERA5"
-scored_z_top = 2500.0
-
-[[case]]
-flight = 11
-forcing = "ERA5"
-scored_z_top = 4000.0
-
-[[case]]
-flight = 12
-forcing = "ERA5"
-scored_z_top = 2500.0
-
-[[case]]
-flight = 13
-forcing = "ERA5"
-scored_z_top = 2500.0

@@ -34,13 +34,7 @@ Test.@testset "cases" begin
         Test.@test SOCRATES.t_end(c9) == 12 * 3600.0
         Test.@test SOCRATES.t_end(c11) == 14 * 3600.0
         Test.@test SOCRATES.n_ccn(c9) == 1.9e8
-        Test.@test SOCRATES.score_window(c9) == (36000.0, 43200.0)
 
-        # every window must lie inside its own run
-        for c in SOCRATES.all_cases()
-            t0, t1 = SOCRATES.score_window(c)
-            Test.@test 0 <= t0 < t1 <= SOCRATES.t_end(c)
-        end
 
         # the real campaign date, not a synthetic epoch
         Test.@test SOCRATES.les_start_datetime(c9) ==
@@ -56,7 +50,7 @@ Test.@testset "cases" begin
             # midpoint-consistent ones for these centres
             Test.@test length(zf) == length(zc) + 1
             Test.@test SOCRATES.centers_from_faces(zf) ≈ zc
-            Test.@test SOCRATES.z_max_default(c) == last(zf)
+            Test.@test SOCRATES.z_max(c) == last(zf)
         end
 
         c = SOCRATES.case("RF09_Obs")

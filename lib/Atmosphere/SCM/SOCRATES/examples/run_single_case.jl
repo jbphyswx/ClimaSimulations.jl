@@ -1,8 +1,10 @@
 """
     run_single_case.jl
 
-Example script demonstrating a standalone forward SOCRATES SCM simulation and LES scoring.
-Layer 1 only (zero calibration dependencies required).
+A standalone forward SOCRATES SCM run.
+
+`SOCRATES.les_outputvars` and `SOCRATES.run_outputvars` read the reference and the run onto
+the same levels and window if you want to look at them.
 """
 
 using SOCRATES: SOCRATES
@@ -20,7 +22,3 @@ SOCRATES.run_case(
     output_dir,
     verbose = true,
 )
-
-# Compare diagnostics against Atlas LES reference
-comparison = SOCRATES.compare_to_les(case, output_dir)
-SOCRATES.print_comparison(comparison)

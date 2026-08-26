@@ -62,7 +62,7 @@ requires `z` to match exactly rather than regridding silently.
 """
 function write_forcing_file(
     path::AbstractString,
-    c::SocratesCase,
+    c::SOCRATESCase,
     z::AbstractVector;
     thermo_params,
 )

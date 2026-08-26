@@ -6,14 +6,12 @@ Part of ClimaSimulations.jl.
 """
 module SOCRATES
 
-using ClimaAnalysis: ClimaAnalysis
 using ClimaAtmos: ClimaAtmos as CA
 using ClimaComms: ClimaComms
 using ClimaParams: ClimaParams as CP
 using Dates: Dates
 using NCDatasets: NCDatasets as NC
 using SOCRATESSingleColumnForcings: SOCRATESSingleColumnForcings as SSCF
-using Statistics: Statistics
 using TOML: TOML
 
 # Reached through ClimaAtmos rather than declared as dependencies, so that this
@@ -37,7 +35,6 @@ include("radiation.jl")
 include("model.jl")
 include("budgets.jl")
 include("transport_diagnostics.jl")
-include("scoring.jl")
 include("les_rates.jl")
 
 end # module SOCRATES

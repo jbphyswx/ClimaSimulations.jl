@@ -8,5 +8,4 @@ Test.@testset "SOCRATES" begin
     include("forcing.jl")
     include("radiation.jl")
     include("terminal_velocity.jl")
-    include("scoring.jl")
 end

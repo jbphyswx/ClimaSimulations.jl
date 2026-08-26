@@ -16,8 +16,12 @@ using Logging: Logging
 using NaNStatistics: NaNStatistics
 using Random: Random
 using SOCRATES: SOCRATES
+using SOCRATESSingleColumnForcings: SOCRATESSingleColumnForcings as SSCF
 using Statistics: Statistics
 
+include("window.jl")
+include("reference.jl")
+include("scoring.jl")
 include("calibration.jl")
 include("postprocess.jl")
 

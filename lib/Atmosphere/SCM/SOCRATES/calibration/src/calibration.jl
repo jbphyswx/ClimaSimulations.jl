@@ -25,16 +25,16 @@ using Statistics: Statistics
 Stack reference observations row-wise, normalized by `pool_var`.
 """
 function normalized_reference_series(
-    c::SOCRATES.SocratesCase;
-    transform::SOCRATES.ScoreTransform = SOCRATES.ScoreTransform(),
+    c::SOCRATES.SOCRATESCase;
+    transform::ScoreTransform = ScoreTransform(),
     vars = SOCRATES.SCORED_VARS,
-    window = SOCRATES.score_window(c),
-    bounds = SOCRATES.z_bounds(c),
+    window = score_window(c),
+    bounds = default_z_bounds(c),
     float_type::Type{<:AbstractFloat} = Float64,
     grid = SOCRATES.socrates_grid(float_type, c),
     z_grid = collect(Float64, SOCRATES.socrates_z(grid)),
 )
-    reference = SOCRATES.les_outputvars(c; vars)
+    reference = les_outputvars(c; vars)
     rows = Vector{Matrix{Float64}}()
     pool_vars = Dict{String, Float64}()
     ranges = Vector{Pair{String, UnitRange{Int}}}()
@@ -45,7 +45,7 @@ function normalized_reference_series(
         windowed[name] = var
         series = _series_matrix(var)
         mean_profile = vec(Statistics.mean(series; dims = 2))
-        pv = SOCRATES.pool_var(transform, name, mean_profile)
+        pv = pool_var(transform, name, mean_profile)
         pool_vars[name] = pv
         push!(rows, series ./ sqrt(pv))
         push!(ranges, name => (offset + 1):(offset + size(series, 1)))
@@ -57,7 +57,7 @@ end
 function _reference_on_grid(var, z_grid, window, bounds)
     out = var
     if ClimaAnalysis.has_altitude(out)
-        out = SOCRATES.reference_on_levels(out, SOCRATES.scored_levels(z_grid, bounds))
+        out = reference_on_levels(out, scored_levels(z_grid, bounds))
     end
     return ClimaAnalysis.window(
         out,
@@ -77,8 +77,8 @@ _series_matrix(var) =
 Build `EKP.Observation` for one case with full cross-variable SVD + diagonal noise covariance.
 """
 function case_observation(
-    c::SOCRATES.SocratesCase;
-    transform::SOCRATES.ScoreTransform = SOCRATES.ScoreTransform(),
+    c::SOCRATES.SOCRATESCase;
+    transform::ScoreTransform = ScoreTransform(),
     vars = SOCRATES.SCORED_VARS,
     rank = nothing,
     kwargs...,
@@ -88,7 +88,7 @@ function case_observation(
     y = _nanmean_rows(series)
     diagonal = zeros(Float64, size(series, 1))
     for (name, range) in ref.ranges
-        diagonal[range] .= SOCRATES.uncertainty_diagonal(transform, name, view(series, range, :))
+        diagonal[range] .= uncertainty_diagonal(transform, name, view(series, range, :))
     end
     bad = findall(<=(0.0), diagonal)
     isempty(bad) || error(
@@ -112,7 +112,7 @@ function case_observation(
     )
 end
 
-scored_name(c::SOCRATES.SocratesCase, var::AbstractString) =
+scored_name(c::SOCRATES.SOCRATESCase, var::AbstractString) =
     string(SOCRATES.case_name(c), "_", var)
 
 function _flat_metadata(var, pool_var, short_name)
@@ -166,16 +166,16 @@ end
 function model_scored_var(
     output_dir::AbstractString,
     name::AbstractString,
-    c::SOCRATES.SocratesCase,
+    c::SOCRATES.SOCRATESCase,
     pool_var::Real;
-    window = SOCRATES.score_window(c),
+    window = score_window(c),
     bounds,
     reduction::AbstractString = "average",
     period::AbstractString = "10m",
 )
-    var = SOCRATES.run_outputvars(output_dir, (name,); reduction, period)[name]
-    levels = SOCRATES.model_levels(var, bounds)
-    mean_var = SOCRATES.windowed_time_mean(SOCRATES.restrict_to_levels(var, levels), window)
+    var = run_outputvars(output_dir, (name,); reduction, period)[name]
+    levels = model_levels(var, bounds)
+    mean_var = windowed_time_mean(restrict_to_levels(var, levels), window)
     data = similar(mean_var.data, Float64)
     data .= mean_var.data ./ sqrt(pool_var)
     dims = ClimaAnalysis.Var.OrderedDict{String, Vector{Float64}}(
@@ -220,14 +220,14 @@ function build_g_ensemble(interface, iteration::Integer)
         try
             for c in interface.cases
                 dir = case_output_dir(interface, iteration, member, c)
-                bounds = SOCRATES.z_bounds(c)
+                bounds = default_z_bounds(c)
                 for name in interface.vars
                     var = model_scored_var(
                         dir,
                         name,
                         c,
                         pool_vars[scored_name(c, name)];
-                        window = SOCRATES.score_window(c),
+                        window = score_window(c),
                         bounds,
                     )
                     ClimaCalibrate.EnsembleBuilder.fill_g_ens_col!(builder, member, var)
@@ -250,16 +250,16 @@ function build_g_ensemble(interface, iteration::Integer)
     return g_ensemble
 end
 
-# --- SocratesInterface --------------------------------------------------------------------- #
+# --- SOCRATESInterface --------------------------------------------------------------------- #
 
 """
-    SocratesInterface(; cases, output_dir, vars, transform, float_type, grids, run_kwargs, prune_output)
+    SOCRATESInterface(; cases, output_dir, vars, transform, float_type, grids, run_kwargs, prune_output)
 
 ClimaCalibrate model interface for SOCRATES EKI calibration.
 """
-struct SocratesInterface{FT <: AbstractFloat, T, G, K} <:
+struct SOCRATESInterface{FT <: AbstractFloat, T, G, K} <:
        ClimaCalibrate.AbstractModelInterface
-    cases::Vector{SOCRATES.SocratesCase}
+    cases::Vector{SOCRATES.SOCRATESCase}
     output_dir::String
     vars::Vector{String}
     transform::T
@@ -269,11 +269,11 @@ struct SocratesInterface{FT <: AbstractFloat, T, G, K} <:
     prune_output::Bool
 end
 
-function SocratesInterface(;
+function SOCRATESInterface(;
     cases = SOCRATES.all_cases(),
     output_dir::AbstractString,
     vars = collect(String, SOCRATES.SCORED_VARS),
-    transform = SOCRATES.ScoreTransform(),
+    transform = ScoreTransform(),
     float_type::Type{<:AbstractFloat} = Float64,
     grids = nothing,
     run_kwargs = (;),
@@ -282,19 +282,19 @@ function SocratesInterface(;
     any(k -> haskey(run_kwargs, k), (:grid, :dz_min, :faces)) && error(
         "Pass the vertical grid as `grids`, not `run_kwargs`.",
     )
-    cases = collect(SOCRATES.SocratesCase, cases)
-    isempty(cases) && error("SocratesInterface needs at least one case")
+    cases = collect(SOCRATES.SOCRATESCase, cases)
+    isempty(cases) && error("SOCRATESInterface needs at least one case")
     grids =
         isnothing(grids) ? [SOCRATES.socrates_grid(float_type, c) for c in cases] :
         collect(grids)
     length(grids) == length(cases) || error(
-        "SocratesInterface needs one grid per case: got $(length(grids)) grids for $(length(cases)) cases.",
+        "SOCRATESInterface needs one grid per case: got $(length(grids)) grids for $(length(cases)) cases.",
     )
     foreach(SOCRATES.validate, cases)
-    isempty(vars) && error("SocratesInterface needs at least one scored variable")
+    isempty(vars) && error("SOCRATESInterface needs at least one scored variable")
     output_dir = abspath(output_dir)
     mkpath(output_dir)
-    return SocratesInterface(
+    return SOCRATESInterface(
         cases,
         output_dir,
         collect(String, vars),
@@ -307,26 +307,26 @@ function SocratesInterface(;
 end
 
 case_output_dir(
-    interface::SocratesInterface,
+    interface::SOCRATESInterface,
     iteration::Integer,
     member::Integer,
-    c::SOCRATES.SocratesCase,
+    c::SOCRATES.SOCRATESCase,
 ) = joinpath(
     ClimaCalibrate.path_to_ensemble_member(interface.output_dir, iteration, member),
     SOCRATES.case_name(c),
 )
 
-function case_grid(interface::SocratesInterface, c::SOCRATES.SocratesCase)
+function case_grid(interface::SOCRATESInterface, c::SOCRATES.SOCRATESCase)
     idx = findfirst(x -> SOCRATES.case_name(x) == SOCRATES.case_name(c), interface.cases)
     isnothing(idx) && error("`$(SOCRATES.case_name(c))` is not one of this interface's cases.")
     return interface.grids[idx]
 end
 
 function run_case_for_member(
-    interface::SocratesInterface,
+    interface::SOCRATESInterface,
     iteration::Integer,
     member::Integer,
-    c::SOCRATES.SocratesCase,
+    c::SOCRATES.SOCRATESCase,
 )
     params = ClimaCalibrate.parameter_path(interface.output_dir, iteration, member)
     isfile(params) ||
@@ -342,23 +342,23 @@ function run_case_for_member(
     )
 end
 
-function ClimaCalibrate.forward_model(interface::SocratesInterface, iteration, member)
+function ClimaCalibrate.forward_model(interface::SOCRATESInterface, iteration, member)
     for c in interface.cases
         run_case_for_member(interface, iteration, member, c)
     end
     return nothing
 end
 
-ClimaCalibrate.observation_map(interface::SocratesInterface, iteration) =
+ClimaCalibrate.observation_map(interface::SOCRATESInterface, iteration) =
     build_g_ensemble(interface, iteration)
 
-ClimaCalibrate.model_interface_filepath(::SocratesInterface) =
+ClimaCalibrate.model_interface_filepath(::SOCRATESInterface) =
     abspath(joinpath(@__DIR__, "SOCRATESCalibration.jl"))
 
-ClimaCalibrate.experiment_dir(::SocratesInterface) =
+ClimaCalibrate.experiment_dir(::SOCRATESInterface) =
     abspath(joinpath(@__DIR__, "..", ".."))
 
-observations(interface::SocratesInterface) = observation_vector(
+observations(interface::SOCRATESInterface) = observation_vector(
     interface.cases;
     transform = interface.transform,
     vars = interface.vars,
@@ -366,7 +366,7 @@ observations(interface::SocratesInterface) = observation_vector(
     float_type = interface.float_type,
 )
 
-observation_series(interface::SocratesInterface) =
+observation_series(interface::SOCRATESInterface) =
     EKP.ObservationSeries(EKP.combine_observations(observations(interface)))
 
 # --- Prior Specification ------------------------------------------------------------------- #
@@ -409,7 +409,7 @@ prior_names(spec = DEFAULT_PRIOR_SPEC) = collect(String.(keys(spec)))
 # --- EKP Assembly -------------------------------------------------------------------------- #
 
 function build_ekp(
-    interface::SocratesInterface,
+    interface::SOCRATESInterface,
     prior;
     ensemble_size::Int,
     T_stops = nothing,
@@ -435,7 +435,7 @@ function build_ekp(
     return ekp
 end
 
-function check_observation_lengths(interface::SocratesInterface, ekp)
+function check_observation_lengths(interface::SOCRATESInterface, ekp)
     series = EKP.get_observation_series(ekp)
     obs_len = length(EKP.get_obs(ekp))
     metadata = ClimaCalibrate.get_metadata_for_nth_iteration(series, 1)
@@ -446,7 +446,7 @@ function check_observation_lengths(interface::SocratesInterface, ekp)
     return nothing
 end
 
-function observation_block_report(interface::SocratesInterface)
+function observation_block_report(interface::SOCRATESInterface)
     return map(interface.cases) do c
         ref = normalized_reference_series(
             c;
@@ -560,7 +560,7 @@ end
 
 function ClimaCalibrate.Calibration.run_iteration(
     backend::ClimaCalibrate.WorkerBackend,
-    interface::SocratesInterface,
+    interface::SOCRATESInterface,
     iteration,
     ensemble_size,
     output_dir,
@@ -640,7 +640,7 @@ Run EKI calibration loop with staged `T_stops`.
 function calibrate(
     backend,
     ekp,
-    interface::SocratesInterface;
+    interface::SOCRATESInterface;
     prior,
     n_iterations::Int,
     T_stops = nothing,
@@ -695,7 +695,7 @@ function calibrate(
 end
 
 function ClimaCalibrate.analyze_iteration(
-    interface::SocratesInterface,
+    interface::SOCRATESInterface,
     ekp,
     g_ensemble,
     prior,

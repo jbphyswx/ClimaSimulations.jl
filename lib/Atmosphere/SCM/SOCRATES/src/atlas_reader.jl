@@ -58,7 +58,7 @@ that the archive holds no variable the table does not classify; it is the guard 
 keeps an unclassified variable from ever being read with unknown units.
 """
 function read_atlas(
-    c::SocratesCase,
+    c::SOCRATESCase,
     names;
     params,
     specs = atlas_specs(params),

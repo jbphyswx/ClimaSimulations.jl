@@ -31,16 +31,16 @@ end
 
 Test.@testset "interface validation" begin
     mktempdir() do out
-        Test.@test_throws ErrorException SC.SocratesInterface(;
-            output_dir = out, cases = SOCRATES.SocratesCase[],
+        Test.@test_throws ErrorException SC.SOCRATESInterface(;
+            output_dir = out, cases = SOCRATES.SOCRATESCase[],
         )
-        Test.@test_throws ErrorException SC.SocratesInterface(;
+        Test.@test_throws ErrorException SC.SOCRATESInterface(;
             output_dir = out, cases = [SOCRATES.case("RF09_Obs")], vars = String[],
         )
         # the grid is the interface's business, so passing one through `run_kwargs` is refused rather
         # than silently overriding the observation's grid
         for key in (:grid, :dz_min, :faces)
-            Test.@test_throws ErrorException SC.SocratesInterface(;
+            Test.@test_throws ErrorException SC.SOCRATESInterface(;
                 output_dir = out,
                 cases = [SOCRATES.case("RF09_Obs")],
                 run_kwargs = (; key => 1),
@@ -111,3 +111,5 @@ Test.@testset "G_ensemble location" begin
     Test.@test SC.g_ensemble_path("/out", 7) ==
                joinpath("/out", "iteration_007", "G_ensemble.jld2")
 end
+
+include("reference.jl")

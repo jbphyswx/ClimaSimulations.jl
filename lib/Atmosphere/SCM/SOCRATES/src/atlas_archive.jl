@@ -62,6 +62,9 @@ end
 """A time axis rebased on its own first sample, so `t = 0` is the start of the run."""
 _elapsed(t) = t .- first(t)
 
+"""Mean of the finite entries of `x`, zero if there are none."""
+nanmean(x) = (f = filter(isfinite, x); isempty(f) ? 0.0 : sum(f) / length(f))
+
 # --- unit scalings ---------------------------------------------------------- #
 
 g_to_kg(x) = x / oftype(x, 1000)

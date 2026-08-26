@@ -36,7 +36,7 @@ Test.@testset "SOCRATESForcing" begin
 
         # flight 11 has no Obs artifact; built directly, since `case` rejects it first
         Test.@test_throws ErrorException forcing_for(
-            SOCRATES.SocratesCase(11, SSCF.ObsForcing()),
+            SOCRATES.SOCRATESCase(11, SSCF.ObsForcing()),
         )
         # a path that does not exist is refused rather than deferred to the cache
         Test.@test_throws ErrorException forcing_for(joinpath(mktempdir(), "absent.nc"))

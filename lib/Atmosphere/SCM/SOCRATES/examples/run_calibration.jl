@@ -80,7 +80,7 @@ function run_calibration(;
     @info "calibrating" cases = length(cases) ensemble_size n_iterations workers =
         collect(pool.workers) output_dir
 
-    interface = SC.SocratesInterface(; cases, output_dir, interface_kwargs...)
+    interface = SC.SOCRATESInterface(; cases, output_dir, interface_kwargs...)
     prior = SC.default_prior()
     ekp = SC.build_ekp(interface, prior; ensemble_size, ekp_kwargs...)
     backend = ClimaCalibrate.WorkerBackend(; worker_pool = pool)

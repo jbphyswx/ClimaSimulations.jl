@@ -56,7 +56,7 @@ end
 
 SOCRATESPrescribedRadiation(
     ::Type{FT},
-    c::SocratesCase,
+    c::SOCRATESCase,
     z::AbstractVector;
     kwargs...,
 ) where {FT <: AbstractFloat} =
