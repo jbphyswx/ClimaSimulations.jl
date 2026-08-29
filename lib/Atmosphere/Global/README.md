@@ -1,0 +1,3 @@
+# Global
+
+Whole-atmosphere configurations.
