@@ -1,7 +1,10 @@
 [deps]
+ClimaCalibrate = "4347a170-ebd6-470c-89d3-5c705c0cacc2"
 SwirlLMCloudBench = "4f4bb049-d08d-4796-8bfd-29fb09dac0f0"
+SwirlLMCloudBenchCalibration = "0faeb5d0-96ae-4078-8b03-b7d0e82ed642"
 SwirlLMCloudBenchSim = "5ed8fcdf-9d83-4ea9-b8e8-68b6a3d79efb"
 
 [sources]
-SwirlLMCloudBenchSim = { path = ".." }
+SwirlLMCloudBenchCalibration = { path = ".." }
+SwirlLMCloudBenchSim = { path = "../.." }
 SwirlLMCloudBench = { url = "https://github.com/jbphyswx/SwirlLMCloudBench.jl.git" }
