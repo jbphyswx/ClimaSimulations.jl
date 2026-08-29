@@ -1,0 +1,5 @@
+[deps]
+BOMEX = "0f4356b5-5c2b-45b1-b057-d3e5f482a65a"
+
+[sources]
+BOMEX = { path = ".." }

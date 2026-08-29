@@ -1,0 +1,9 @@
+[deps]
+BOMEX = "0f4356b5-5c2b-45b1-b057-d3e5f482a65a"
+BOMEXCalibration = "368b8c58-2627-475b-8206-ea1a95c0dbc8"
+ClimaCalibrate = "4347a170-ebd6-470c-89d3-5c705c0cacc2"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+
+[sources]
+BOMEX = { path = "../.." }
+BOMEXCalibration = { path = ".." }

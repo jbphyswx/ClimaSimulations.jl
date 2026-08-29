@@ -1,0 +1,52 @@
+# ClimaParams overrides for BOMEX
+
+[EDMF_max_surface_area]
+value = 0.1
+
+[EDMF_min_area]
+value = 1.0e-5
+
+[EDMF_max_area]
+value = 0.7
+
+[turb_entr_param_vec]
+value = [0.001, 1.0e5]
+
+[entr_inv_tau]
+value = 0.0
+
+[entr_coeff]
+value = 0.1
+
+[min_area_limiter_scale]
+value = 0.001
+
+[min_area_limiter_power]
+value = 1.0
+
+[detr_coeff]
+value = 0.0
+
+[detr_buoy_coeff]
+value = 1.0
+
+[detr_vertdiv_coeff]
+value = 0.0
+
+[detr_massflux_vertdiv_coeff]
+value = 0.3
+
+[max_area_limiter_scale]
+value = 0.001
+
+[max_area_limiter_power]
+value = 1.0
+
+[pressure_normalmode_drag_coeff]
+value = 8.0
+
+[condensation_evaporation_timescale]
+value = 100.0
+
+[sublimation_deposition_timescale]
+value = 100.0

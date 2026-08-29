@@ -1,0 +1,43 @@
+# Per-case data for BOMEX.
+
+[run_duration]
+source = ""
+units = "s"
+t_end = 21600.0
+
+[reference_pressure]
+source = ""
+units = "Pa"
+p_0 = 101500.0
+
+[surface]
+source = ""
+temperature = 300.4
+temperature_units = "K"
+z0 = 1.0e-4
+z0_units = "m"
+theta_flux = 8.0e-3
+theta_flux_units = "K m s^-1"
+q_flux = 5.2e-5
+q_flux_units = "m s^-1"
+ustar = 0.28
+ustar_units = "m s^-1"
+
+[surface_overrides]
+source = ""
+p = 101500.0
+p_units = "Pa"
+q_vap = 0.02245
+q_vap_units = "kg kg^-1"
+
+[coriolis]
+source = ""
+units = "s^-1"
+f = 0.376e-4
+
+[grid]
+source = ""
+units = "m"
+z_max = 3000.0
+z_elem = 60
+note = "keep the the updraft off the top boundary; raise z_max if a run saturates the domain"

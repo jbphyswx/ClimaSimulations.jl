@@ -1,0 +1,10 @@
+[deps]
+BOMEX = "0f4356b5-5c2b-45b1-b057-d3e5f482a65a"
+BOMEXCalibration = "368b8c58-2627-475b-8206-ea1a95c0dbc8"
+EnsembleKalmanProcesses = "aa8a2aa5-91d8-4396-bcef-d4f2ec43552d"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[sources]
+BOMEX = { path = "../.." }
+BOMEXCalibration = { path = ".." }
