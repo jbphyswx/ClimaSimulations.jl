@@ -5,7 +5,7 @@ Ensemble Kalman Inversion of the SOCRATES microphysics parameters against the
 Atlas LES.
 
 ```julia
-include("examples/run_calibration.jl")
+include("calibration/examples/run_calibration.jl")
 
 run_calibration()                              # 4 workers on whatever this is
 run_calibration(; nworkers = 16)               # more members in flight

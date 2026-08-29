@@ -9,16 +9,13 @@ The window is chosen by the forcing source, so it dispatches on the case's type 
 rather than branching at run time.
 """
 
-"""Length [s] of the Obs averaging window: the last two hours of the run, Atlas et al. 2020."""
-const OBS_WINDOW_LENGTH = 2 * 3600.0
 
 """
     reference_window(case, FT = Float64)
 
 The `(t_start, t_end)` window [s] over which model and reference are both averaged.
 
-An Obs run is averaged over its own last [`OBS_WINDOW_LENGTH`](@ref), so the window follows
-`t_end` rather than repeating it. An ERA5 run is averaged over `time_bnds` relative to
+An ERA5 run is averaged over `time_bnds` relative to
 `reference_time` in the Atlas `SOCRATES_summary.nc` artifact, plus the 12 h offset from the
 LES start; those are fixed published metadata, so they are written out here rather than the
 artifact being opened on every call. [`era5_score_window`](@ref) is that derivation, and

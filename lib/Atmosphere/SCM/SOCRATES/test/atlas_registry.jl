@@ -89,19 +89,66 @@ Test.@testset "ice_distribution_slope inverts the mass relation" begin
     Test.@test 0 < coarse < fine < 1
 end
 
-Test.@testset "every rate source is a rate" begin
-    for (rate, terms) in SOCRATES.LES_RATE_SOURCES
-        Test.@test rate in SOCRATES.MP1M_SOURCE_TERMS ||
-                   any(startswith(rate, p) for p in SOCRATES.TRANSPORT_PREFIXES)
-        for (name, _) in terms
-            Test.@test haskey(SPECS, name)
-            # a rate mapped to a variable the registry converts to something else
-            Test.@test SPECS[name].units == "kg/kg/s"
+Test.@testset "every tendency source is a rate" begin
+    for (tendency, sources) in SOCRATES.LES_TENDENCIES
+        name = String(tendency)
+        Test.@test name in SOCRATES.MP1M_SOURCE_TERMS ||
+                   any(startswith(name, p) for p in SOCRATES.TRANSPORT_PREFIXES)
+        for (source, _) in sources
+            Test.@test haskey(SPECS, source)
+            # a tendency mapped to a variable the registry converts to something else
+            Test.@test SPECS[source].units == "kg/kg/s"
         end
-        rate in SOCRATES.MP1M_SOURCE_TERMS || continue
+        name in SOCRATES.MP1M_SOURCE_TERMS || continue
         Test.@test any(
-            any(term == rate for (term, _) in terms) for
+            any(term == name for (term, _) in terms) for
             terms in values(SOCRATES.MP1M_BUDGETS)
         )
+    end
+end
+
+Test.@testset "mapped and unavailable partition the model budget" begin
+    budget = Set(
+        Symbol.((
+            SOCRATES.MP1M_SOURCE_TERMS...,
+            ("$(p)_$(v)" for p in SOCRATES.TRANSPORT_PREFIXES for
+             v in SOCRATES.MP1M_BUDGET_VARS)...,
+        )),
+    )
+    mapped = Set(keys(SOCRATES.LES_TENDENCIES))
+    absent = Set(keys(SOCRATES.LES_TENDENCIES_UNAVAILABLE))
+    Test.@test isempty(intersect(mapped, absent))
+    Test.@test isempty(setdiff(budget, union(mapped, absent)))
+    Test.@test isempty(setdiff(union(mapped, absent), budget))
+end
+
+Test.@testset "each process rate records the archive's own description" begin
+    les = SSCF.open_atlas_les_output(RF09.flight_number, RF09.forcing_type)
+    for (rate, entry) in SOCRATES.ATLAS_PROCESS_RATES
+        Test.@test haskey(les.data, String(rate))
+        long_name = strip(get(les.data[String(rate)].attrib, "long_name", ""))
+        Test.@test endswith(long_name, entry.long_name)
+        terms = SOCRATES.atlas_model_terms(rate)
+        if isnothing(terms)
+            Test.@test entry.model in SOCRATES.NO_MODEL_COUNTERPART
+        else
+            for (term, sign) in terms
+                Test.@test String(term) in SOCRATES.MP1M_SOURCE_TERMS
+                Test.@test abs(sign) == 1
+            end
+        end
+    end
+    Test.@test_throws ErrorException SOCRATES.atlas_model_terms(:NOT_A_RATE)
+end
+
+Test.@testset "the rate lists are the table's own mass and number entries" begin
+    Test.@test length(SOCRATES.ATLAS_PROCESS_RATES) ==
+               length(SOCRATES.ATLAS_MASS_PROCESS_RATES) +
+               length(SOCRATES.ATLAS_NUMBER_PROCESS_RATES)
+    for rate in SOCRATES.ATLAS_MASS_PROCESS_RATES
+        Test.@test SOCRATES.ATLAS_PROCESS_RATES[rate].kind === :mass
+    end
+    for rate in SOCRATES.ATLAS_NUMBER_PROCESS_RATES
+        Test.@test SOCRATES.ATLAS_PROCESS_RATES[rate].kind === :number
     end
 end

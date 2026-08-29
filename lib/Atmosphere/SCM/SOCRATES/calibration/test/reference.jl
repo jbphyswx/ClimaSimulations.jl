@@ -10,7 +10,7 @@ Test.@testset "scoring" begin
     Test.@testset "Atlas LES reference loads for every case" begin
         for c in SOCRATES.all_cases()
             ref = SC.les_outputvars(c)
-            for name in SOCRATES.SCORED_VARS
+            for name in SC.default_calibration_vars
                 Test.@test haskey(ref, name)
             end
             clw = ref["clw"]
@@ -94,7 +94,7 @@ Test.@testset "the two vocabularies cannot drift apart" begin
         Test.@test haskey(diags, name)
         Test.@test diags[name].units == pair.model_units
     end
-    for name in SOCRATES.SCORED_VARS
+    for name in SC.default_calibration_vars
         Test.@test haskey(SC.MODEL_TO_ATLAS, name)
     end
     # the one pairing whose two vocabularies differ numerically rather than in spelling

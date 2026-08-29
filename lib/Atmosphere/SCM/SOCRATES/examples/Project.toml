@@ -1,0 +1,5 @@
+[deps]
+SOCRATES = "a37e3bb6-c736-4927-99dc-192931448b43"
+
+[sources]
+SOCRATES = { path = ".." }

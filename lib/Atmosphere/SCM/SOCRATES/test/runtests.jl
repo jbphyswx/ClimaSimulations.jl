@@ -6,6 +6,8 @@ Test.@testset "SOCRATES" begin
     include("parameters.jl")
     include("atlas_registry.jl")
     include("forcing.jl")
+    include("io.jl")
     include("radiation.jl")
     include("terminal_velocity.jl")
+    include("scheduler.jl")
 end

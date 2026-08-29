@@ -65,7 +65,7 @@ function best_members(
 end
 
 """
-    rerun_member(interface, iteration, member; output_dir, period, vars)
+    rerun_member(interface, iteration, member; output_dir, period_seconds, vars, executor)
 
 Rerun every case for one member with the full process-rate diagnostics, into
 `output_dir/<case_name>`, returning the directories in `interface.cases` order.
@@ -80,11 +80,12 @@ function rerun_member(
     output_dir::AbstractString,
     period_seconds::Real = 600,
     vars = SOCRATES.TENDENCY_DIAGNOSTIC_VARS,
+    executor::SOCRATES.AbstractExecutor = SOCRATES.SerialExecutor(),
 )
     params = ClimaCalibrate.parameter_path(interface.output_dir, iteration, member)
     isfile(params) ||
         error("No parameters.toml for iteration $iteration member $member: $params")
-    return map(interface.cases) do case
+    run_one = case -> begin
         grid = case_grid(interface, case)
         SOCRATES.run_case(
             case;
@@ -102,6 +103,9 @@ function rerun_member(
             interface.run_kwargs...,
         )
     end
+    affinity_keys =
+        [SOCRATES.topology_key(case_grid(interface, c)) for c in interface.cases]
+    return SOCRATES.run_tasks(run_one, interface.cases, affinity_keys, executor)
 end
 
 """
@@ -118,6 +122,7 @@ function postprocess_best_members(
         interface.output_dir,
     ),
     period_seconds::Real = 600,
+    executor::SOCRATES.AbstractExecutor = SOCRATES.SerialExecutor(),
 )
     selected = best_members(interface; last_iteration)
     results = Dict{String, Any}()
@@ -130,6 +135,7 @@ function postprocess_best_members(
             pick.member;
             output_dir = joinpath(output_dir, label),
             period_seconds,
+            executor,
         )
         results[label] = (; pick.iteration, pick.member, pick.misfit, dirs)
     end
@@ -165,7 +171,7 @@ function case_budget_terms(
     z = Float64[]
     for (name, key) in wanted
         var = try
-            only(values(run_outputvars(dir, (name,); period)))
+            only(values(SOCRATES.run_outputvars(dir, (name,); period)))
         catch
             continue
         end

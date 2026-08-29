@@ -1,0 +1,9 @@
+[deps]
+ClimaCalibrate = "4347a170-ebd6-470c-89d3-5c705c0cacc2"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
+SOCRATES = "a37e3bb6-c736-4927-99dc-192931448b43"
+SOCRATESCalibration = "b71f5ce8-89fa-48b5-b778-959c2770be12"
+
+[sources]
+SOCRATES = { path = "../.." }
+SOCRATESCalibration = { path = ".." }

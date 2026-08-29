@@ -251,8 +251,12 @@ end
 
 # --- Diagnostics ------------------------------------------------------------ #
 
-"""The profile and water-path variables the Atlas LES comparison scores."""
-const SCORED_VARS = ("clw", "cli", "husra", "hussn", "lwp", "iwp", "rwp", "swp")
+"""
+Condensate and precipitation mass fractions and their water paths. A default for
+[`socrates_diagnostics`](@ref); pass `short_names` for any other set.
+"""
+const default_diagnostic_vars =
+    ("clw", "cli", "husra", "hussn", "lwp", "iwp", "rwp", "swp")
 
 """
     socrates_diagnostics(short_names; period_seconds, reduction, n_levels, kwargs...)
@@ -261,7 +265,7 @@ A `DiagnosticsConfig` writing `short_names` on the model's own levels.
 `kwargs...` are forwarded to `DiagnosticsConfig`.
 """
 socrates_diagnostics(
-    short_names = SCORED_VARS;
+    short_names = default_diagnostic_vars;
     period_seconds::Real = 600,
     reduction::AbstractString = "average",
     n_levels::Int,
@@ -493,18 +497,3 @@ function run_case(
     return sim.output_dir
 end
 
-"""
-    run_cases(cases; FT, output_dir, kwargs...) -> Vector
-
-Run each case into its own subdirectory of `output_dir`. A case that fails stops
-the sweep.
-"""
-run_cases(
-    cases::AbstractVector{<:SOCRATESCase};
-    FT::Type{<:AbstractFloat} = Float64,
-    output_dir::AbstractString,
-    kwargs...,
-) = [
-    run_case(c; FT, output_dir = joinpath(output_dir, case_name(c)), kwargs...)
-    for c in cases
-]

@@ -1,11 +1,12 @@
 """
     SOCRATES
 
-Single-column simulation and Atlas LES scoring for the SOCRATES campaign.
+Single-column simulation of the SOCRATES campaign, and reading the Atlas LES archive. 
 Part of ClimaSimulations.jl.
 """
 module SOCRATES
 
+using ClimaAnalysis: ClimaAnalysis
 using ClimaAtmos: ClimaAtmos as CA
 using ClimaComms: ClimaComms
 using ClimaParams: ClimaParams as CP
@@ -25,16 +26,17 @@ const Insolation = CA.Insolation
 
 include("casedata.jl")
 include("parameters.jl")
-include("atlas_archive.jl")
-include("atlas_registry.jl")
 include("cases.jl")
+include("atlas_archive.jl")
+include("atlas_tendencies.jl")
+include("atlas_registry.jl")
 include("atlas_reader.jl")
 include("forcing.jl")
 include("io.jl")
 include("radiation.jl")
 include("model.jl")
+include("parallel.jl")
 include("budgets.jl")
 include("transport_diagnostics.jl")
-include("les_rates.jl")
 
 end # module SOCRATES

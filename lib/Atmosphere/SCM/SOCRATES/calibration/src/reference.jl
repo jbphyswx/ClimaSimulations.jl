@@ -123,7 +123,7 @@ The Atlas LES reference for `case`, as a `Dict` of ClimaAtmos short name to
 """
 function les_outputvars(
     c::SOCRATES.SOCRATESCase;
-    vars = SOCRATES.SCORED_VARS,
+    vars = default_calibration_vars,
     params = SOCRATES.socrates_params(Float64, c),
 )
     for name in vars
@@ -226,33 +226,6 @@ function _pad_to_cell_extent(var::ClimaAnalysis.OutputVar)
     )
     return ClimaAnalysis.OutputVar(var.attributes, dims, var.dim_attributes, data)
 end
-
-# --- Reading a run ---------------------------------------------------------- #
-
-"""
-    run_outputvars(output_dir, vars; period, reduction)
-
-The scored diagnostics of a run, as `ClimaAnalysis.OutputVar`s.
-
-`period` and `reduction` default to `nothing`, letting `ClimaAnalysis` discover
-them; it errors if a run wrote more than one, which is the case where naming them
-is actually required.
-"""
-function run_outputvars(
-    output_dir::AbstractString,
-    vars = SOCRATES.SCORED_VARS;
-    period::Union{String, Nothing} = nothing,
-    reduction::Union{String, Nothing} = nothing,
-)
-    simdir = ClimaAnalysis.SimDir(active_output_dir(output_dir))
-    return Dict{String, ClimaAnalysis.OutputVar}(
-        name => ClimaAnalysis.get(simdir; short_name = name, reduction, period)
-        for name in vars
-    )
-end
-
-active_output_dir(dir::AbstractString) =
-    isdir(joinpath(dir, "output_active")) ? joinpath(dir, "output_active") : dir
 
 model_levels(var::ClimaAnalysis.OutputVar, bounds) =
     ClimaAnalysis.has_altitude(var) ?

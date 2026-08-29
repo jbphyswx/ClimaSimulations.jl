@@ -10,6 +10,15 @@ the observation map. `SOCRATES` owns reading the reference and aligning it with 
 everything that assigns it a weight is below.
 """
 
+"""
+Default calibration variables: condensate and precipitation mass fractions and their water paths.
+"""
+const default_calibration_vars =
+    ("clw", "cli", "husra", "hussn", "lwp", "iwp", "rwp", "swp")
+
+"""Mean of the finite entries of `x`, zero if there are none."""
+nanmean(x) = (f = filter(isfinite, x); isempty(f) ? 0.0 : sum(f) / length(f))
+
 function mean_nonzero_elements(x; all_zero = zero(eltype(x)))
     n = count(!iszero, x)
     n == 0 && return oftype(one(eltype(x)) * all_zero, all_zero)
@@ -111,7 +120,7 @@ function uncertainty_diagonal(
     fraction = _entry(transform.uncertainty_floor, name, "uncertainty_floor")
     floor = fraction * normalized_characteristic(transform, name)
     magnitude =
-        [SOCRATES.nanmean(abs.(view(series, i, :))) for i in axes(series, 1)]
+        [nanmean(abs.(view(series, i, :))) for i in axes(series, 1)]
     return @. (factor * magnitude)^2 + floor^2
 end
 
@@ -125,13 +134,13 @@ function compare_to_les(
     c::SOCRATES.SOCRATESCase,
     output_dir::AbstractString;
     transform::ScoreTransform = ScoreTransform(),
-    vars = SOCRATES.SCORED_VARS,
+    vars = default_calibration_vars,
     window = score_window(c),
     bounds = default_z_bounds(c),
     period::Union{String, Nothing} = nothing,
     reduction::Union{String, Nothing} = nothing,
 )
-    model = run_outputvars(output_dir, vars; period, reduction)
+    model = SOCRATES.run_outputvars(output_dir, vars; period, reduction)
     reference = les_outputvars(c; vars)
     out = Dict{String, Any}()
     for name in vars
@@ -161,7 +170,7 @@ function print_comparison(comparison; io = stdout)
         io, rpad("variable", 10), rpad("n", 5), rpad("rmse (norm)", 14),
         rpad("mean model", 14), rpad("mean ref", 14), "pool_var",
     )
-    for name in SOCRATES.SCORED_VARS
+    for name in default_calibration_vars
         haskey(comparison, name) || continue
         c = comparison[name]
         mm = Statistics.mean(filter(isfinite, c.model))

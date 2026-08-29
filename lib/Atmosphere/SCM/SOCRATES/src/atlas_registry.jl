@@ -25,22 +25,8 @@ ever copied through with unknown units.
 """
 
 # Atlas reports `?/kg/day` for three unrelated kinds of quantity, distinguished only by
-# `long_name`: mass mixing-ratio rates, number rates, and inverse lengths.
-const ATLAS_MASS_PROCESS_RATES = (
-    :EPRD, :EPRDG, :EPRDS, :EVPMG, :EVPMS, :MNUCCC, :MNUCCD, :MNUCCI, :MNUCCR, :PCC,
-    :PCCN, :PGMLT, :PGRACS, :PGSACW, :PIACR, :PIACRS, :PITOSN, :PRA, :PRACG, :PRACI,
-    :PRACIS, :PRACS, :PRAI, :PRC, :PRCI, :PRD, :PRDG, :PRDS, :PRE, :PSACR, :PSACWG,
-    :PSACWI, :PSACWS, :PSMLT, :QHOMOC, :QHOMOR, :QMELTI, :QMULTG, :QMULTR, :QMULTRG,
-    :QMULTS,
-)
-
-const ATLAS_NUMBER_PROCESS_RATES = (
-    :NGMLTG, :NGMLTR, :NGRACS, :NHOMOC, :NHOMOR, :NIACR, :NIACRS, :NMELTI, :NMULTG,
-    :NMULTR, :NMULTRG, :NMULTS, :NNUCCC, :NNUCCD, :NNUCCI, :NNUCCR, :NPRA, :NPRACG,
-    :NPRACS, :NPRAI, :NPRC, :NPRC1, :NPRCI, :NPSACWG, :NPSACWI, :NPSACWS, :NRAGG,
-    :NSAGG, :NSCNG, :NSMLTR, :NSMLTS, :NSUBC, :NSUBG, :NSUBI, :NSUBR, :NSUBS,
-)
-
+# `long_name`: mass mixing-ratio rates, number rates, and inverse lengths. The first two are
+# `ATLAS_MASS_PROCESS_RATES` and `ATLAS_NUMBER_PROCESS_RATES` of `atlas_process_rates.jl`.
 const ATLAS_SLOPE_PARAMETERS = (:LAMC, :LAMG, :LAMI, :LAMR, :LAMS)
 
 """Coordinates seeded rather than specified, and so exempt from coverage."""
@@ -140,8 +126,7 @@ function atlas_var_specs(thermo_params)
         units = "kg/kg/s", raw_units = "g/kg/day", quantity = :water_mass_rate,
         provenance = :units_attr)
     # M2005 carries these as kg/kg/s (`micro_pumas_v1.F90`); Atlas prints the numerator as
-    # `?`. Signs are Atlas's own and uniform across the family: growth and collection
-    # positive, evaporation, sublimation and melting negative.
+    # `?`. Each rate's own measured sign is in `ATLAS_PROCESS_RATES`;
     register!(ATLAS_MASS_PROCESS_RATES; inputs = (:q_tot,),
         transform = ComposeFirst(dwcdt_to_dqcdt, perday_to_persec),
         units = "kg/kg/s", raw_units = "?/kg/day", quantity = :water_mass_rate,

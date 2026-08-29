@@ -27,7 +27,7 @@ Stack reference observations row-wise, normalized by `pool_var`.
 function normalized_reference_series(
     c::SOCRATES.SOCRATESCase;
     transform::ScoreTransform = ScoreTransform(),
-    vars = SOCRATES.SCORED_VARS,
+    vars = default_calibration_vars,
     window = score_window(c),
     bounds = default_z_bounds(c),
     float_type::Type{<:AbstractFloat} = Float64,
@@ -79,7 +79,7 @@ Build `EKP.Observation` for one case with full cross-variable SVD + diagonal noi
 function case_observation(
     c::SOCRATES.SOCRATESCase;
     transform::ScoreTransform = ScoreTransform(),
-    vars = SOCRATES.SCORED_VARS,
+    vars = default_calibration_vars,
     rank = nothing,
     kwargs...,
 )
@@ -133,7 +133,7 @@ function _flat_metadata(var, pool_var, short_name)
     return ClimaAnalysis.flatten(mean_var).metadata
 end
 
-_nanmean_rows(m) = [SOCRATES.nanmean(view(m, i, :)) for i in axes(m, 1)]
+_nanmean_rows(m) = [nanmean(view(m, i, :)) for i in axes(m, 1)]
 
 function _low_rank_time_covariance(series, rank)
     samples = replace(series, NaN => 0.0)
@@ -173,7 +173,7 @@ function model_scored_var(
     reduction::AbstractString = "average",
     period::AbstractString = "10m",
 )
-    var = run_outputvars(output_dir, (name,); reduction, period)[name]
+    var = SOCRATES.run_outputvars(output_dir, (name,); reduction, period)[name]
     levels = model_levels(var, bounds)
     mean_var = windowed_time_mean(restrict_to_levels(var, levels), window)
     data = similar(mean_var.data, Float64)
@@ -253,9 +253,14 @@ end
 # --- SOCRATESInterface --------------------------------------------------------------------- #
 
 """
-    SOCRATESInterface(; cases, output_dir, vars, transform, float_type, grids, run_kwargs, prune_output)
+    SOCRATESInterface(; cases, output_dir, vars, transform, float_type, grids, run_kwargs,
+                      prune_output, startup_waves, startup_wave_pause)
 
 ClimaCalibrate model interface for SOCRATES EKI calibration.
+
+`startup_waves` and `startup_wave_pause` are forwarded to each iteration's
+[`SOCRATES.WorkerPoolExecutor`](@ref); they are off by default because the memory peak they
+spread is a property of the machine.
 """
 struct SOCRATESInterface{FT <: AbstractFloat, T, G, K} <:
        ClimaCalibrate.AbstractModelInterface
@@ -267,17 +272,21 @@ struct SOCRATESInterface{FT <: AbstractFloat, T, G, K} <:
     grids::Vector{G}
     run_kwargs::K
     prune_output::Bool
+    startup_waves::Int
+    startup_wave_pause::Float64
 end
 
 function SOCRATESInterface(;
     cases = SOCRATES.all_cases(),
     output_dir::AbstractString,
-    vars = collect(String, SOCRATES.SCORED_VARS),
+    vars = collect(String, default_calibration_vars),
     transform = ScoreTransform(),
     float_type::Type{<:AbstractFloat} = Float64,
     grids = nothing,
     run_kwargs = (;),
     prune_output::Bool = true,
+    startup_waves::Integer = 0,
+    startup_wave_pause::Real = 0,
 )
     any(k -> haskey(run_kwargs, k), (:grid, :dz_min, :faces)) && error(
         "Pass the vertical grid as `grids`, not `run_kwargs`.",
@@ -303,6 +312,8 @@ function SOCRATESInterface(;
         grids,
         run_kwargs,
         prune_output,
+        Int(startup_waves),
+        Float64(startup_wave_pause),
     )
 end
 
@@ -463,52 +474,6 @@ function observation_block_report(interface::SOCRATESInterface)
     end
 end
 
-# --- Calibration Execution Infrastructure -------------------------------------------------- #
-
-const DEFAULT_EMPTY_POOL_TIMEOUT = 7200
-
-struct WorkerPoolExecutor{P <: Distributed.AbstractWorkerPool}
-    pool::P
-    empty_pool_timeout::Int
-end
-
-WorkerPoolExecutor(
-    pool::Distributed.AbstractWorkerPool;
-    empty_pool_timeout::Integer = DEFAULT_EMPTY_POOL_TIMEOUT,
-) = WorkerPoolExecutor(pool, Int(empty_pool_timeout))
-
-function run_tasks(f, tasks, executor::WorkerPoolExecutor)
-    (; pool, empty_pool_timeout) = executor
-    results = Vector{Any}(nothing, length(tasks))
-    pending = collect(enumerate(tasks))
-    inflight = Threads.Atomic{Int}(0)
-    t_last_available = time()
-    @sync while !isempty(pending)
-        if isempty(pool.workers)
-            inflight[] > 0 && (t_last_available = time())
-            waited = time() - t_last_available
-            inflight[] == 0 && waited > empty_pool_timeout && error(
-                "No workers available for $(round(Int, waited)) s (timeout $(empty_pool_timeout) s).",
-            )
-            sleep(1)
-            continue
-        end
-        t_last_available = time()
-        i, task = pop!(pending)
-        worker = take!(pool)
-        Threads.atomic_add!(inflight, 1)
-        @async try
-            results[i] = Distributed.remotecall_fetch(f, worker, task)
-        catch e
-            @error "Task failed on worker $worker" task exception = e
-        finally
-            Threads.atomic_sub!(inflight, 1)
-            put!(pool, worker)
-        end
-    end
-    return results
-end
-
 # --- Calibration Driver -------------------------------------------------------------------- #
 
 function set_field(x, name::Symbol, value)
@@ -574,15 +539,19 @@ function ClimaCalibrate.Calibration.run_iteration(
         length(backend.worker_pool.workers)
 
     if !isempty(tasks)
-        executor = WorkerPoolExecutor(
+        executor = SOCRATES.WorkerPoolExecutor(
             backend.worker_pool;
             empty_pool_timeout = backend.empty_pool_timeout,
+            interface.startup_waves,
+            interface.startup_wave_pause,
         )
+        affinity_keys =
+            [SOCRATES.topology_key(case_grid(interface, c)) for (_, c) in tasks]
         run_one = task -> begin
             member, c = task
             run_case_for_member(interface, iteration, member, c)
         end
-        results = run_tasks(run_one, tasks, executor)
+        results = SOCRATES.run_tasks(run_one, tasks, affinity_keys, executor)
         for ((member, c), result) in zip(tasks, results)
             isnothing(result) || mark_case_completed(interface, iteration, member, c)
         end

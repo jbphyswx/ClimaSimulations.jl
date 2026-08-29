@@ -71,7 +71,7 @@ Test.@testset "integration" begin
             Test.@test result.ret_code === :success
 
             vars = SOCRATES.run_outputvars(sim.output_dir)
-            for name in SOCRATES.SCORED_VARS
+            for name in SOCRATES.default_diagnostic_vars
                 Test.@test haskey(vars, name)
                 v = vars[name]
                 t = v.dims[ClimaAnalysis.time_name(v)]

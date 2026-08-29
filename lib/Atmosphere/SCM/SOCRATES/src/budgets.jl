@@ -2,33 +2,16 @@
     budgets.jl
 
 Which microphysics process rates make up each prognostic tendency, and the diagnostic names that
-carry them. A calibration writes only the scored variables, so reading a finished run for *which
-process did what* means asking for these instead.
+carry them.
 """
 
 """
 The 1-moment process rates ClimaAtmos registers, available for `NonEquilibriumMicrophysics1M`.
+
+Read out of `CA.Diagnostics.MP1M_SOURCE_TERMS`.
 """
-const MP1M_SOURCE_TERMS = (
-    "S_phase_change_vap_lcl",
-    "S_phase_change_vap_icl",
-    "S_acnv_lcl_rai",
-    "S_acnv_icl_sno",
-    "S_accr_lcl_rai",
-    "S_accr_lcl_sno_cold",
-    "S_accr_lcl_sno_warm",
-    "S_accr_melt_lcl_sno",
-    "S_accr_icl_rai",
-    "S_accr_freeze_icl_rai",
-    "S_accr_icl_sno",
-    "S_accr_rai_sno_cold",
-    "S_accr_rai_sno_warm",
-    "S_accr_melt_rai_sno",
-    "S_phase_change_vap_rai",
-    "S_phase_change_vap_sno",
-    "S_melt_icl_lcl",
-    "S_melt_sno_rai",
-)
+const MP1M_SOURCE_TERMS =
+    Tuple(String(field) for (field, _) in CA.Diagnostics.MP1M_SOURCE_TERMS)
 
 """Where a rate is evaluated. The updraft and environment sets require `PrognosticEDMFX`."""
 const MP1M_LOCATIONS = ("mp1m", "mp1mup", "mp1men")
@@ -93,11 +76,11 @@ const TRANSPORT_BUDGETS = Dict{String, Vector{Tuple{String, Int}}}(
 )
 
 """
-State and updraft fields for reading a run's evolution beyond what is scored. `pfull` is the quantity
-whose sign a thermodynamic blow-up destroys first.
+[`default_diagnostic_vars`](@ref) plus the state and updraft fields a run's evolution is read
+from. `pfull` is the quantity whose sign a thermodynamic blow-up destroys first.
 """
 const DEBUG_DIAGNOSTIC_VARS = (
-    SCORED_VARS...,
+    default_diagnostic_vars...,
     "pfull",
     "rhoa",
     "ta",
@@ -111,8 +94,8 @@ const DEBUG_DIAGNOSTIC_VARS = (
 )
 
 """
-Every process rate at every location, plus the fields needed to read them: 54 rates, far too much
-output for a calibration member, so this is what a postprocessing rerun asks for.
+[`DEBUG_DIAGNOSTIC_VARS`](@ref) plus every process rate at every location and every transport
+term — 54 rates
 """
 const TENDENCY_DIAGNOSTIC_VARS = (
     DEBUG_DIAGNOSTIC_VARS...,
