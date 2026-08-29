@@ -5,7 +5,7 @@ using Test: Test
 # EKP object, and the minibatch round trip. A forward run is `test/integration.jl` in
 # the package and is not part of this suite.
 
-include(joinpath(@__DIR__, "..", "run_calibration.jl"))
+include(joinpath(@__DIR__, "..", "examples", "run_calibration.jl"))
 
 const CASES = [MOSAiC_AYiL.case(d) for d in ("20200503", "20200210")]
 
@@ -118,3 +118,5 @@ Test.@testset "a transformed band is the physical band propagated" begin
     ))
     Test.@test σ_low > 5 * σ_high
 end
+
+include("postprocess.jl")

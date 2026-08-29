@@ -7,4 +7,5 @@ Test.@testset "MOSAiC_AYiL" begin
     include("io.jl")
     include("forcing.jl")
     include("setup.jl")
+    include("scheduler.jl")
 end

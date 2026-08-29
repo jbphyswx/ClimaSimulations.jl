@@ -290,10 +290,12 @@ function model_field(
     period::Union{String, Nothing} = nothing,
     reduction::Union{String, Nothing} = nothing,
 )
-    dir = isdir(joinpath(output_dir, "output_active")) ?
-          joinpath(output_dir, "output_active") : output_dir
-    var = ClimaAnalysis.get(
-        ClimaAnalysis.SimDir(dir); short_name = String(short_name), reduction, period,
+    var = only(
+        values(
+            MOSAiC_AYiL.run_outputvars(
+                output_dir, (String(short_name),); period, reduction,
+            ),
+        ),
     )
     time = collect(Float64, var.dims[ClimaAnalysis.time_name(var)])
     ClimaAnalysis.has_altitude(var) ||

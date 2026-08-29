@@ -19,5 +19,6 @@ using Statistics: Statistics
 include("ayil_info.jl")
 include("scoring.jl")
 include("calibration.jl")
+include("postprocess.jl")
 
 end # module MOSAiCAYiLCalibration

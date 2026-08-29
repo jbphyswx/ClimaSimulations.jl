@@ -20,8 +20,8 @@ using Random: Random
 calibration_vars = ("cli", "clw", "husra", "hussn", "iwp", "lwp", "rwp", "swp")
 # calibration_vars = ("ql_all", "qi_all", "qi_all_wp", "ql_all_wp")
 
-include(joinpath(@__DIR__, "src", "MOSAiCAYiLCalibration.jl"))
-include(joinpath(@__DIR__, "configs", "prior.jl"))
+include(joinpath(@__DIR__, "..", "src", "MOSAiCAYiLCalibration.jl"))
+include(joinpath(@__DIR__, "..", "configs", "prior.jl"))
 const MC = MOSAiCAYiLCalibration
 
 function parse_args(args = ARGS)
@@ -48,7 +48,7 @@ end
 
 function calibrate(;
     cases = MC.default_calibration_cases(),
-    outdir::AbstractSring,
+    outdir::AbstractString,
     calibration_vars = ("cli", "clw", "husra", "hussn", "iwp", "lwp", "rwp", "swp"),
     ensemble_size = 20, 
     iterations = 10, 

@@ -149,6 +149,8 @@ struct MOSAiCInterface{FT <: AbstractFloat, G, K} <:
     float_type::Type{FT}
     grids::Vector{G}
     run_kwargs::K
+    startup_waves::Int
+    startup_wave_pause::Float64
 end
 
 function MOSAiCInterface(;
@@ -163,6 +165,8 @@ function MOSAiCInterface(;
             [default_calibration_grid(float_type, c; dz_min) for c in cases] :
             fill(grid, length(cases)),
     run_kwargs = (;),
+    startup_waves::Integer = 0,
+    startup_wave_pause::Real = 0,
 )
     cases = collect(MOSAiC_AYiL.MOSAiCAYiLCase, cases)
     isempty(cases) && error("MOSAiCInterface needs at least one case")
@@ -176,7 +180,14 @@ function MOSAiCInterface(;
     output_dir = abspath(output_dir)
     mkpath(output_dir)
     return MOSAiCInterface(
-        cases, output_dir, collect(String, vars), float_type, collect(grids), run_kwargs,
+        cases,
+        output_dir,
+        collect(String, vars),
+        float_type,
+        collect(grids),
+        run_kwargs,
+        Int(startup_waves),
+        Float64(startup_wave_pause),
     )
 end
 
@@ -239,26 +250,116 @@ function required_diagnostics(vars)
     return isempty(paths) ? needed : unique(vcat(needed, "rhoa"))
 end
 
-function ClimaCalibrate.forward_model(interface::MOSAiCInterface, iteration, member)
+"""
+    run_case_for_member(interface, iteration, member, case)
+
+Run one `(member, case)` pair, returning the directory its diagnostics were written to.
+
+This is the unit of work [`ClimaCalibrate.Calibration.run_iteration`](@ref) schedules, so it
+has to be callable on a worker.
+"""
+function run_case_for_member(
+    interface::MOSAiCInterface,
+    iteration::Integer,
+    member::Integer,
+    c::MOSAiC_AYiL.MOSAiCAYiLCase,
+)
     params = ClimaCalibrate.parameter_path(interface.output_dir, iteration, member)
-    isfile(params) ||
-        error("No sampled parameter file for member $member: $params")
-    short_names = required_diagnostics(interface.vars)
+    isfile(params) || error("No sampled parameter file for member $member: $params")
+    grid = case_grid(interface, c)
+    return MOSAiC_AYiL.run_case(
+        c;
+        FT = interface.float_type,
+        params,
+        output_dir = case_output_dir(interface, iteration, member, c),
+        grid,
+        diagnostics = MOSAiC_AYiL.mosaic_diagnostics(
+            required_diagnostics(interface.vars);
+            n_levels = length(MOSAiC_AYiL.mosaic_z(grid)),
+        ),
+        verbose = false,
+        interface.run_kwargs...,
+    )
+end
+
+function ClimaCalibrate.forward_model(interface::MOSAiCInterface, iteration, member)
     for c in interface.cases
-        grid = case_grid(interface, c)
-        MOSAiC_AYiL.run_case(
-            c;
-            FT = interface.float_type,
-            params,
-            output_dir = case_output_dir(interface, iteration, member, c),
-            grid,
-            diagnostics = MOSAiC_AYiL.mosaic_diagnostics(
-                short_names; n_levels = length(MOSAiC_AYiL.mosaic_z(grid)),
-            ),
-            verbose = false,
-            interface.run_kwargs...,
-        )
+        run_case_for_member(interface, iteration, member, c)
     end
+    return nothing
+end
+
+case_marker_path(interface::MOSAiCInterface, iteration, member, c) =
+    joinpath(case_output_dir(interface, iteration, member, c), "case_completed")
+
+case_completed(interface::MOSAiCInterface, iteration, member, c) =
+    isfile(case_marker_path(interface, iteration, member, c))
+
+function mark_case_completed(interface::MOSAiCInterface, iteration, member, c)
+    path = case_marker_path(interface, iteration, member, c)
+    mkpath(dirname(path))
+    write(path, "completed")
+    return nothing
+end
+
+"""
+    ClimaCalibrate.Calibration.run_iteration(backend::WorkerBackend, interface::MOSAiCInterface, ...)
+
+Run one iteration as a flat pool of `(member, case)` tasks.
+
+With `n` days and `m` members this is `n * m` independent tasks over the pool rather than `m`,
+so the worker count is not capped by the ensemble size and a slow day cannot idle a worker
+behind it. Only cases that have not already completed are scheduled, so a resumed iteration
+re-runs what is missing rather than a whole member.
+"""
+function ClimaCalibrate.Calibration.run_iteration(
+    backend::ClimaCalibrate.WorkerBackend,
+    interface::MOSAiCInterface,
+    iteration,
+    ensemble_size,
+    output_dir,
+)
+    tasks = [
+        (member, c) for member in 1:ensemble_size for c in interface.cases if
+        !case_completed(interface, iteration, member, c)
+    ]
+    total = ensemble_size * length(interface.cases)
+    @info "Iteration $iteration: $(length(tasks))/$total case-runs to do" n_workers =
+        length(backend.worker_pool.workers)
+
+    if !isempty(tasks)
+        executor = MOSAiC_AYiL.WorkerPoolExecutor(
+            backend.worker_pool;
+            empty_pool_timeout = backend.empty_pool_timeout,
+            interface.startup_waves,
+            interface.startup_wave_pause,
+        )
+        affinity_keys =
+            [MOSAiC_AYiL.topology_key(case_grid(interface, c)) for (_, c) in tasks]
+        run_one = task -> begin
+            member, c = task
+            run_case_for_member(interface, iteration, member, c)
+        end
+        results = MOSAiC_AYiL.run_tasks(run_one, tasks, affinity_keys, executor)
+        for ((member, c), result) in zip(tasks, results)
+            isnothing(result) || mark_case_completed(interface, iteration, member, c)
+        end
+    end
+
+    failed = [
+        member for member in 1:ensemble_size if
+        any(c -> !case_completed(interface, iteration, member, c), interface.cases)
+    ]
+    for member in 1:ensemble_size
+        member in failed ||
+            ClimaCalibrate.write_model_completed(output_dir, iteration, member)
+    end
+    rate = length(failed) / ensemble_size
+    rate > backend.failure_rate && error(
+        "Iteration $iteration had a $(round(rate * 100; digits = 2))% member failure rate \
+         (members $failed), exceeding the $(backend.failure_rate * 100)% threshold.",
+    )
+    isempty(failed) || @warn "Failed ensemble members: $failed"
     return nothing
 end
 

@@ -1,0 +1,7 @@
+[deps]
+ClimaAtmos = "b2c96348-7fb7-4fe0-8da9-78d88439e717"
+MOSAiC_AYiL = "99b42949-9d25-46dd-a09d-3f6a84126053"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+
+[sources]
+MOSAiC_AYiL = { path = ".." }

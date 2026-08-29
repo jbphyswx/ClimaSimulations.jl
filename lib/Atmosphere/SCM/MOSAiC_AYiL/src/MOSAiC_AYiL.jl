@@ -41,6 +41,7 @@ include("forcing.jl")
 include("setup.jl")
 include("diagnostics.jl")
 include("model.jl")
+include("parallel.jl")
 
 # the names ClimaAtmos lacks have to be in its registry before a diagnostics config
 # can ask for them
